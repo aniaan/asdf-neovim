@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+tags_path="https://api.github.com/repos/neovim/neovim/tags"
+
+response=$(curl -s "$tags_path")
+
+versions=$(echo "$response" | jq -r '.[].name' | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' | sort | tr '\n' ' ' | sed 's/ $//')
+
+if [ -z "$versions" ]; then
+	echo "Error: No versions found or invalid response format" >&2
+	exit 1
+fi
+
+echo "$versions nightly"
