@@ -24,8 +24,8 @@ get_architecture() {
 }
 
 get_binary_filename() {
-	local platform=$1
-	local architecture=$2
+	local platform="$1"
+	local architecture="$2"
 
 	if [ "$platform" = "linux64" ]; then
 		echo "nvim-${platform}.tar.gz"
@@ -35,37 +35,53 @@ get_binary_filename() {
 }
 
 verify_checksum() {
-	local file=$1
+	local checksum_file="$1"
+	local dir="$2"
 
-	if command -v sha256sum >/dev/null; then
-		sha256sum -c "${file}.sha256sum"
-	elif command -v shasum >/dev/null; then
-		shasum -a 256 -c "${file}.sha256sum"
-	else
-		fail "sha256sum or shasum command not found"
-	fi
+	(cd "$dir" && {
+		if command -v sha256sum >/dev/null; then
+			sha256sum -c "$checksum_file" || {
+				echo "Checksum verification failed"
+				return 1
+			}
+		elif command -v shasum >/dev/null; then
+			shasum -a 256 -c "$checksum_file" || {
+				echo "Checksum verification failed"
+				return 1
+			}
+		else
+			echo "sha256sum or shasum command not found"
+			return 1
+		fi
+	})
+
+	echo "Checksum verification passed"
 }
 
 download_and_verify() {
-	local url=$1
-	local output_path=$2
+	local url="$1"
+	local output_path="$2"
 
 	echo "* Downloading ${url##*/}..."
-	curl --fail --silent --location --output "$output_path" "$url" || return 1
+	curl --fail --silent --location --output "$output_path" "$url" || {
+		echo "Failed to download: ${url##*/}"
+		return 1
+	}
 }
 
 install_neovim_binary() {
-	local download_url=$1
-	local sha256_url=$2
-	local binary_filename=$3
-	local install_path=$4
-	local tmp_dir=$5
+	local download_url="$1"
+	local sha256_url="$2"
+	local binary_filename="$3"
+	local install_path="$4"
+	local tmp_dir="$5"
 
 	local source_path="${tmp_dir}/${binary_filename}"
 
 	download_and_verify "$download_url" "$source_path" || return 1
 	download_and_verify "$sha256_url" "${source_path}.sha256sum" || return 1
-	verify_checksum "${binary_filename}" || return 1
+
+	verify_checksum "${binary_filename}.sha256sum" "$tmp_dir" || return 1
 
 	echo "* Extracting archive..."
 	mkdir -p "$install_path"
@@ -74,20 +90,13 @@ install_neovim_binary() {
 	echo "* Setting permissions..."
 	chmod +x "$install_path/bin/nvim" || return 1
 
-	rm -rf "$tmp_dir"
 	return 0
 }
 
-cleanup_and_fail() {
-	local tmp_dir=$1
-	rm -rf "$tmp_dir"
-	fail "$2"
-}
-
 install_neovim() {
-	local install_type=$1
-	local version=$2
-	local install_path=$3
+	local install_type="$1"
+	local version="$2"
+	local install_path="$3"
 
 	[ "$install_type" = "version" ] || fail "neovim install type '$install_type' is not supported"
 
@@ -102,10 +111,11 @@ install_neovim() {
 
 	local tmp_dir
 	tmp_dir="$(mktemp -d -t neovim_XXXXXX)"
+	trap 'rm -rf "$tmp_dir"' EXIT
 
 	echo "* Installing neovim ${version} for ${platform}/${architecture}"
 
-	install_neovim_binary "$download_url" "$sha256_url" "$binary_filename" "$install_path" "$tmp_dir" || cleanup_and_fail "$tmp_dir" "Installation failed"
+	install_neovim_binary "$download_url" "$sha256_url" "$binary_filename" "$install_path" "$tmp_dir" || fail "Installation failed"
 	echo "* Installation completed successfully!"
 }
 
