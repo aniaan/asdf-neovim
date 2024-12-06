@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
-tags_path="https://api.github.com/repos/neovim/neovim/tags"
+source "$(dirname "$0")/../lib/utils.sh"
+
+tags_path=$(get_github_api_tags_url)
 
 response=$(curl -s "$tags_path")
 

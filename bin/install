@@ -2,6 +2,9 @@
 set -e
 set -o pipefail
 
+source "$(dirname "$0")/../lib/utils.sh"
+
+
 fail() {
 	echo -e "\e[31mFail:\e[m $*"
 	exit 1
@@ -38,19 +41,26 @@ verify_checksum() {
 	local checksum_file="$1"
 	local dir="$2"
 
+	# Validate parameters
+	[ -z "$checksum_file" ] && { echo "Error: checksum file not specified"; return 1; }
+	[ -z "$dir" ] && { echo "Error: directory not specified"; return 1; }
+
+	# Check if file and directory exist
+	[ ! -f "$dir/$checksum_file" ] && { echo "Error: checksum file not found: $checksum_file"; return 1; }
+
 	(cd "$dir" && {
 		if command -v sha256sum >/dev/null; then
-			sha256sum -c "$checksum_file" || {
+			sha256sum -c "$checksum_file" 2>/dev/null || {
 				echo "Checksum verification failed"
 				return 1
 			}
 		elif command -v shasum >/dev/null; then
-			shasum -a 256 -c "$checksum_file" || {
+			shasum -a 256 -c "$checksum_file" 2>/dev/null || {
 				echo "Checksum verification failed"
 				return 1
 			}
 		else
-			echo "sha256sum or shasum command not found"
+			echo "Neither sha256sum nor shasum command found"
 			return 1
 		fi
 	})
@@ -62,9 +72,9 @@ download_and_verify() {
 	local url="$1"
 	local output_path="$2"
 
-	echo "* Downloading ${url##*/}..."
+	echo "* Downloading ${url}..."
 	curl --fail --silent --location --output "$output_path" "$url" || {
-		echo "Failed to download: ${url##*/}"
+		echo "Failed to download: ${url}"
 		return 1
 	}
 }
@@ -113,7 +123,7 @@ install_neovim() {
 
 	local binary_filename download_url sha256_url
 	binary_filename="$(get_binary_filename "$platform" "$architecture")"
-	download_url="https://github.com/neovim/neovim/releases/download/${download_version}/${binary_filename}"
+	download_url=$(get_release_url "$download_version" "$binary_filename")
 	sha256_url="${download_url}.sha256sum"
 
 	local tmp_dir
