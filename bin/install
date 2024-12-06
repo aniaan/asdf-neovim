@@ -100,13 +100,20 @@ install_neovim() {
 
 	[ "$install_type" = "version" ] || fail "neovim install type '$install_type' is not supported"
 
-	local platform architecture
+	local platform architecture download_version
 	platform="$(get_platform)" || fail "Unsupported platform"
 	architecture="$(get_architecture)" || fail "Unsupported architecture"
 
+	# 处理版本号
+	if [ "$version" = "nightly" ]; then
+		download_version="nightly"
+	else
+		download_version="v${version}"
+	fi
+
 	local binary_filename download_url sha256_url
 	binary_filename="$(get_binary_filename "$platform" "$architecture")"
-	download_url="https://github.com/neovim/neovim/releases/download/${version}/${binary_filename}"
+	download_url="https://github.com/neovim/neovim/releases/download/${download_version}/${binary_filename}"
 	sha256_url="${download_url}.sha256sum"
 
 	local tmp_dir
