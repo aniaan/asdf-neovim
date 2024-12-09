@@ -12,7 +12,7 @@ PLUGIN = Plugin(
     name="neovim",
     cmd="nvim",
     repo_name="neovim/neovim",
-    filename_template=lambda kwargs: f"nvim-{kwargs['platform']}{'-' + kwargs['arch'] if kwargs['platform'] != 'linux64' else ''}"
+    filename_template=lambda kwargs: f"nvim-{kwargs['platform']}{'-' + kwargs['arch'] if kwargs['platform'] != 'linux64' else ''}",
     platform_map={
         "darwin": "macos",
         "linux": "linux64",
