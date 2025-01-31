@@ -32,7 +32,7 @@ PLUGIN = Plugin(
         "x86_64": "x86_64",
         "aarch64": "arm64",
     },
-    checksum_filename_template="{filename}.sha256sum",
+    checksum_filename_template="shasum.txt",
     bin_path=lambda kwargs: f"{kwargs['filename'].rstrip('.tar.gz')}/bin/nvim",
     recover_raw_version=lambda x: f"v{x}" if x[0].isdigit() else x,
     custom_copy=_copy,
