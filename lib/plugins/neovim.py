@@ -27,7 +27,7 @@ PLUGIN = Plugin(
     filename_template="nvim-{platform}-{arch}.tar.gz",
     platform_map={
         "darwin": "macos",
-        "linux": "linux64",
+        "linux": "linux",
     },
     arch_map={
         "x86_64": "x86_64",
